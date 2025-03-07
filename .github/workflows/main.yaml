@@ -12,7 +12,7 @@ jobs:
         with:
           fetch-depth: 0  # Required to inspect all commits
 
-      - name: Validate branch name
+      - name: Validate branch name of branch 
         run: |
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           # Check if branch matches "feat/..." or "bug/..." (lowercase, hyphens allowed)

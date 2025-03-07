@@ -1,22 +1,37 @@
-name: Validate Branch and Commits
-
 on:
   [pull_request]
-
+name: Create Release
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Required to inspect all commits
-
-      - name: Validate branch name of branch 
-        run: |
-          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
-          # Check if branch matches "feat/..." or "bug/..." (lowercase, hyphens allowed)
-          if [[ ! "$BRANCH_NAME" =~ ^(feat|bug)\/[a-z0-9-]+$ ]]; then
-            echo "::error::Branch '$BRANCH_NAME' must follow 'feat/feature-name' or 'bug/bug-name' format."
-            exit 1
-          fi
+    build:
+      name: Create Release
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+  
+        - name: Check Branch Name
+          id: check_branch
+          run: |
+            BRANCH_NAME=$(echo "${{ github.ref_name }}" | grep -E '(feat)')
+            if [[ -n "$BRANCH_NAME" ]]; then
+              echo "BRANCH_MATCH=true" >> $GITHUB_ENV
+            else
+              echo "BRANCH_MATCH=false" >> $GITHUB_ENV
+            fi
+  
+        - name: Create Release
+          id: create_release
+          if: env.BRANCH_MATCH == 'true'
+          uses: actions/create-release@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: ${{ github.ref_name }}
+            release_name: Release ${{ github.ref_name }}
+            body: |
+              Changes in this Release:
+              - First Change
+              - Second Change
+            draft: false
+            prerelease: false
+  

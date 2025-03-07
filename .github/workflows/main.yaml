@@ -1,0 +1,22 @@
+name: Validate Branch and Commits
+
+on:
+  workflow_call:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required to inspect all commits
+
+      - name: Validate branch name
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          # Check if branch matches "feat/..." or "bug/..." (lowercase, hyphens allowed)
+          if [[ ! "$BRANCH_NAME" =~ ^(feat|bug)\/[a-z0-9-]+$ ]]; then
+            echo "::error::Branch '$BRANCH_NAME' must follow 'feat/feature-name' or 'bug/bug-name' format."
+            exit 1
+          fi

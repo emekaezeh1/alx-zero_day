@@ -1,22 +1,31 @@
-name: Validate Branch and Commits
+name: Release
 
 on:
-  workflow_call:
+  workflow_dispatch:
 
 jobs:
-  validate:
+  release:
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required to inspect all commits
-
-      - name: Validate branch name
-        run: |
-          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
-          # Check if branch matches "feat/..." or "bug/..." (lowercase, hyphens allowed)
-          if [[ ! "$BRANCH_NAME" =~ ^(feat|bug)\/[a-z0-9-]+$ ]]; then
-            echo "::error::Branch '$BRANCH_NAME' must follow 'feat/feature-name' or 'bug/bug-name' format."
-            exit 1
-          fi
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Get Release Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.RELEASE_APP_ID }}
+          application_private_key: ${{ secrets.RELEASE_APP_CERT }}
+      - run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
